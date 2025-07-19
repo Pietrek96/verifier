@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { AnalyticsAction, sendAnalyticsEvent } from "./googleAnalytics";
 
-export let acceptedFileExtensions = ["fc", "func", "pkg"];
+export let acceptedFileExtensions = ["fc", "func", "pkg", "tolk"];
 if (import.meta.env.VITE_ALLOW_FIFT) acceptedFileExtensions.push("fift");
 
 export type FileToUpload = {
@@ -52,7 +52,9 @@ export const useFileStore = create(
             includeInCommand: true,
             folder: folders.slice(0, folders.length - 1).join("/"),
             hasIncludeDirectives: content.includes("#include"),
-            isEntrypoint: /\(\)\s*(recv_internal|main)\s*\(/.test(content),
+            isEntrypoint:
+              /\(\)\s*(recv_internal|recv_external|main)\s*\(/.test(content) ||
+              /fun (onInternalMessage|onExternalMessage)\s*\(/.test(content),
             isStdlib: /stdlib.(fc|func)/i.test(f.name),
           };
         }),

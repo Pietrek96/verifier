@@ -104,7 +104,7 @@ export function FileUploaderArea() {
           id="fileUpload"
           type="file"
           multiple
-          accept=".fc,.func,.fif"
+          accept={acceptedFileExtensions.join(",")}
           // ref={inputRef}
           // @ts-ignore
         />

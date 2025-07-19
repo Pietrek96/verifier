@@ -4,11 +4,12 @@ import { useLoadContractProof } from "../lib/useLoadContractProof";
 
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
-import { funcVersionToLink, fiftVersionToLink, tactVersionToLink } from "../utils/linkUtils";
+import { funcVersionToLink, fiftVersionToLink, tactVersionToLink, tolkVersionToLink, dropPatchVersionZero } from "../utils/linkUtils";
 import {
   FiftCliCompileSettings,
   FuncCompilerSettings,
   TactCliCompileSettings,
+  TolkCliCompileSettings,
 } from "@ton-community/contract-verifier-sdk";
 
 TimeAgo.addDefaultLocale(en);
@@ -50,8 +51,16 @@ export function CompilerBlock() {
         color: "#0088CC",
         customLink: tactVersionToLink(tactVersion),
       });
+    } else if (data.compiler === "tolk") {
+        const tolkVersion = (compilerSettings as TolkCliCompileSettings)?.tolkVersion;
+          dataRows.push({
+            title: "Version",
+            value: dropPatchVersionZero(tolkVersion),
+            color: "#0088CC",
+            customLink: tolkVersionToLink(tolkVersion),
+          });
     }
-    if (data.compiler !== "tact") {
+    if (data.compiler == "func") {
       dataRows.push({
         title: "Command",
         // @ts-ignore

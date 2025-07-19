@@ -74,13 +74,13 @@ function App() {
   // Initialize func version
   const { initialize } = useCompilerSettingsStore(); // TODO IN PROG
   const {
-    data: { funcVersions },
+    data: { funcVersions, tolkVersions },
   } = useRemoteConfig();
   useEffect(() => {
     if ((funcVersions?.length ?? 0) > 0) {
-      initialize(funcVersions![0]);
+      initialize(funcVersions?.[0], tolkVersions?.[0]);
     }
-  }, [funcVersions]);
+  }, [funcVersions, tolkVersions]);
 
   return (
     <Box

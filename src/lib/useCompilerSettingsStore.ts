@@ -2,11 +2,15 @@ import { useEffect } from "react";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useFileStore } from "./useFileStore";
-import { FuncCompilerVersion, TactVersion } from "@ton-community/contract-verifier-sdk";
+import {
+  FuncCompilerVersion,
+  TactVersion,
+  TolkVersion,
+} from "@ton-community/contract-verifier-sdk";
 import { PackageFileFormat } from "@tact-lang/compiler";
 import { useRemoteConfig } from "./useRemoteConfig";
 
-export type Compiler = "func" | "fift" | "tact";
+export type Compiler = "func" | "fift" | "tact" | "tolk";
 
 export type UserProvidedFuncCompileSettings = {
   funcVersion: FuncCompilerVersion;
@@ -18,23 +22,35 @@ export type UserProvidedTactCompileSettings = {
   tactVersion: TactVersion;
 };
 
+export type UserProvidedTolkCompilerSettings = {
+  tolkVersion: TolkVersion;
+};
+
 type State = {
   compiler: Compiler;
-  compilerSettings: UserProvidedFuncCompileSettings | UserProvidedTactCompileSettings;
+  compilerSettings:
+    | UserProvidedFuncCompileSettings
+    | UserProvidedTactCompileSettings
+    | UserProvidedTolkCompilerSettings;
   _defaultFuncVersion: FuncCompilerVersion;
+  _defaultTolkVersion: TolkVersion;
 };
 
 type DerivedState = {};
 
 type Actions = {
   setCompilerSettings: (
-    settings: UserProvidedFuncCompileSettings | UserProvidedTactCompileSettings,
+    settings:
+      | UserProvidedFuncCompileSettings
+      | UserProvidedTactCompileSettings
+      | UserProvidedTolkCompilerSettings,
   ) => void;
   setOverrideCommandLine: (overrideCommandLine: string | null) => void;
   setFuncCliVersion: (funcVersion: FuncCompilerVersion) => void;
   setTactCliVersion: (tactVersion: TactVersion) => void;
+  setTolkVersion: (tolkVersion: TolkVersion) => void;
   setCompiler: (compiler: Compiler) => void;
-  initialize: (defaultFuncVersion: FuncCompilerVersion) => void;
+  initialize: (defaultFuncVersion: FuncCompilerVersion, defaultTolkVersion: TolkVersion) => void;
 };
 
 const _useCompilerSettingsStore = create(
@@ -43,13 +59,15 @@ const _useCompilerSettingsStore = create(
     compiler: "func" as Compiler,
     compilerSettings: { funcVersion: "", commandLine: "" } as UserProvidedFuncCompileSettings,
     _defaultFuncVersion: "",
+    _defaultTolkVersion: "",
 
     // Derived
 
     // Actions
-    initialize: (defaultFuncVersion: FuncCompilerVersion) => {
+    initialize: (defaultFuncVersion: FuncCompilerVersion, defaultTolkVersion: TolkVersion) => {
       set((state) => {
         state._defaultFuncVersion = defaultFuncVersion;
+        state._defaultTolkVersion = defaultTolkVersion;
 
         // TODO resolve this duplicity of logic with setCompiler
         state.compilerSettings = {
@@ -61,7 +79,10 @@ const _useCompilerSettingsStore = create(
     },
 
     setCompilerSettings: (
-      settings: UserProvidedFuncCompileSettings | UserProvidedTactCompileSettings,
+      settings:
+        | UserProvidedFuncCompileSettings
+        | UserProvidedTactCompileSettings
+        | UserProvidedTolkCompilerSettings,
     ) => {
       set((state) => {
         state.compilerSettings = settings;
@@ -96,6 +117,15 @@ const _useCompilerSettingsStore = create(
       });
     },
 
+    setTolkVersion: (tolkVersion: TolkVersion) => {
+      set((state) => {
+        if (state.compiler !== "tolk") {
+          throw new Error("not tolk compiler");
+        }
+        state.compilerSettings = { tolkVersion };
+      });
+    },
+
     setCompiler: (compiler: Compiler) => {
       set((state) => {
         state.compiler = compiler;
@@ -107,6 +137,10 @@ const _useCompilerSettingsStore = create(
           };
         } else if (compiler === "tact") {
           state.compilerSettings = { tactVersion: "" };
+        } else if (compiler === "tolk") {
+          state.compilerSettings = {
+            tolkVersion: state._defaultTolkVersion,
+          };
         }
       });
     },
@@ -130,19 +164,23 @@ export function useCompilerSettingsStore() {
     return `-SPA ${cmd}`;
   }
 
-  // Tact version setter
+  // Tact/Tolk version setter
   useEffect(() => {
-    const file = files.find((f) => f.fileObj.name.endsWith(".pkg"));
+    const tactPkgFile = files.find((f) => f.fileObj.name.endsWith(".pkg"));
+    const tolkFile = files.find((f) => f.fileObj.name.endsWith(".tolk"));
     (async () => {
-      if (!file) return;
-      const raw = await file.fileObj.text();
-      const pkgParsed: PackageFileFormat = JSON.parse(raw);
-      compilerStore.setCompiler("tact");
-      // TODO show in UI
-      if (!tactVersions.includes(pkgParsed.compiler.version)) {
-        throw new Error("Unsupported tact version " + pkgParsed.compiler.version);
+      if (tactPkgFile) {
+        const raw = await tactPkgFile.fileObj.text();
+        const pkgParsed: PackageFileFormat = JSON.parse(raw);
+        compilerStore.setCompiler("tact");
+        // TODO show in UI
+        if (!tactVersions.includes(pkgParsed.compiler.version)) {
+          throw new Error("Unsupported tact version " + pkgParsed.compiler.version);
+        }
+        compilerStore.setCompilerSettings({ tactVersion: pkgParsed.compiler.version });
+      } else if (tolkFile) {
+        compilerStore.setCompiler("tolk");
       }
-      compilerStore.setCompilerSettings({ tactVersion: pkgParsed.compiler.version });
     })();
   }, [files]);
 

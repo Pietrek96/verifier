@@ -14,6 +14,8 @@ import {
   FuncCompilerVersion,
   TactCliCompileSettings,
   TactVersion,
+  TolkCliCompileSettings,
+  TolkVersion,
 } from "@ton-community/contract-verifier-sdk";
 import { useRemoteConfig } from "../lib/useRemoteConfig";
 import { tactVersionToLink } from "../utils/linkUtils";
@@ -24,6 +26,7 @@ function CompilerSettings() {
     setOverrideCommandLine,
     setFuncCliVersion,
     setTactCliVersion,
+    setTolkVersion,
     compiler,
     setCompiler,
   } = useCompilerSettingsStore();
@@ -34,7 +37,7 @@ function CompilerSettings() {
   const canPublish = !!data?.result?.msgCell;
 
   const {
-    data: { funcVersions, tactVersions },
+    data: { funcVersions, tactVersions, tolkVersions },
   } = useRemoteConfig();
 
   return (
@@ -58,6 +61,7 @@ function CompilerSettings() {
               }}>
               <MenuItem value={"func"}>func</MenuItem>
               <MenuItem value={"tact"}>tact</MenuItem>
+              <MenuItem value={"tolk"}>tolk</MenuItem>
               {import.meta.env.VITE_ALLOW_FIFT && <MenuItem value={"fift"}>fift</MenuItem>}
             </CompilerSelect>
           </CompilerFormControl>
@@ -127,6 +131,28 @@ function CompilerSettings() {
                   value={(compilerSettings as TactCliCompileSettings).tactVersion}
                   disabled>
                   {tactVersions?.map((version) => (
+                    <MenuItem key={version} value={version}>
+                      {version}
+                    </MenuItem>
+                  ))}
+                </CompilerSelect>
+              </CompilerFormControl>
+            </CenteringBox>
+          </>
+        )}
+        {compiler === "tolk" && (
+          <>
+            <CenteringBox
+              mb={isSmallScreen ? 1 : 0}
+              sx={{ width: isSmallScreen ? "100%" : "inherit" }}>
+              <CompilerFormControl disabled={canPublish}>
+                <CompilerLabel>Version</CompilerLabel>
+                <CompilerSelect
+                  value={(compilerSettings as TolkCliCompileSettings).tolkVersion}
+                  onChange={(e) => {
+                    setTolkVersion(e.target.value as TolkVersion);
+                  }}>
+                  {tolkVersions?.map((version) => (
                     <MenuItem key={version} value={version}>
                       {version}
                     </MenuItem>
